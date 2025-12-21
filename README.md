@@ -71,6 +71,36 @@ VITE_API_BASE_URL=https://your-api-url.example.com
 
 ---
 
+## 🚀 Deployment to Vercel
+
+This project is ready to deploy on Vercel. Follow these steps:
+
+1. **Push your code to GitHub/GitLab/Bitbucket**
+
+2. **Import your repository to Vercel:**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Add New Project"
+   - Import your repository
+
+3. **Configure Environment Variables:**
+   - In Vercel project settings, go to "Environment Variables"
+   - Add `VITE_API_BASE_URL` with your production API URL
+   - Example: `VITE_API_BASE_URL=https://your-production-api.com`
+
+4. **Deploy:**
+   - Vercel will automatically detect Vite and deploy
+   - The `vercel.json` file is already configured
+   - Build command: `npm run build`
+   - Output directory: `dist`
+
+5. **Verify:**
+   - After deployment, check that all routes work correctly
+   - Test the API connection with your production backend
+
+**Note:** Make sure your backend API has CORS configured to allow requests from your Vercel domain.
+
+---
+
 ## 📋 More
 
 - Designed for easy deployment to static hosts (like Netlify, Vercel, etc.).
