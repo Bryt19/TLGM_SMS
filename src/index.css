@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Mobile-friendly base styles */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure touch targets are at least 44x44px for mobile */
+button, a, input[type="submit"], input[type="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Improve text rendering on mobile */
+input, textarea, select {
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+@media (min-width: 640px) {
+  input, textarea, select {
+    font-size: inherit;
+  }
+}
