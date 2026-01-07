@@ -11,7 +11,6 @@ const SignIn = () => {
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
-    contactType: 'email',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,25 +23,34 @@ const SignIn = () => {
   };
 
   const validatePhone = (phone) => {
-    const phoneRegex = /^[\+]?[1-9][\d\s\-\(\)]+$/;
-    return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+    // Remove all non-digit characters to check length
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // International phone numbers: 7-15 digits (ITU-T E.164 standard)
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      return false;
+    }
+    
+    // Allow international formats: +, spaces, dashes, parentheses, dots
+    // Must start with + or a digit (country code)
+    const phoneRegex = /^[\+]?[\d][\d\s\-\(\)\.]+$/;
+    
+    return phoneRegex.test(phone.trim());
   };
 
   const validateForm = () => {
     const errors = {};
 
-    if (formData.contactType === 'email') {
-      if (!formData.email.trim()) {
-        errors.email = 'Email is required';
-      } else if (!validateEmail(formData.email)) {
-        errors.email = 'Please enter a valid email address';
-      }
-    } else {
-      if (!formData.phone.trim()) {
-        errors.phone = 'Phone number is required';
-      } else if (!validatePhone(formData.phone)) {
-        errors.phone = 'Please enter a valid phone number';
-      }
+    // Phone number is required
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!validatePhone(formData.phone)) {
+      errors.phone = 'Please enter a valid international phone number (7-15 digits)';
+    }
+
+    // Email is optional, but if provided, validate it
+    if (formData.email.trim() && !validateEmail(formData.email)) {
+      errors.email = 'Please enter a valid email address';
     }
 
     setValidationErrors(errors);
@@ -61,10 +69,14 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const contact = formData.contactType === 'email' ? formData.email : formData.phone;
       const registrationData = {
-        [formData.contactType]: contact,
+        phone: formData.phone.trim(),
       };
+      
+      // Email is optional, only include if provided
+      if (formData.email.trim()) {
+        registrationData.email = formData.email.trim();
+      }
 
       const response = await apiService.registerApplicant(registrationData);
 
@@ -139,105 +151,60 @@ const SignIn = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Sign in method selector */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-white mb-3">
-                  Sign in with
+              {/* Phone Field - Required */}
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Phone Number <span className="text-red-300">*</span>
                 </label>
-                <div className="flex gap-3 bg-white/10 rounded-xl p-1 backdrop-blur-sm">
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, contactType: 'email' }))}
-                    className={`flex-1 px-5 py-3 rounded-lg font-medium transition-all duration-300 ${
-                      formData.contactType === 'email'
-                        ? 'bg-white text-purple-700 shadow-lg transform scale-105'
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+1234567890"
+                    required
+                    className={`w-full pl-12 pr-4 py-4 bg-white/95 backdrop-blur-sm border-2 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 ${
+                      validationErrors.phone
+                        ? 'border-red-500 focus:ring-red-500/50'
+                        : 'border-gray-300 hover:border-gray-400'
                     }`}
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Email
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, contactType: 'phone' }))}
-                    className={`flex-1 px-5 py-3 rounded-lg font-medium transition-all duration-300 ${
-                      formData.contactType === 'phone'
-                        ? 'bg-white text-purple-700 shadow-lg transform scale-105'
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      Phone
-                    </span>
-                  </button>
+                  />
                 </div>
+                {validationErrors.phone && (
+                  <p className="mt-2 text-sm text-red-300 font-medium">{validationErrors.phone}</p>
+                )}
               </div>
 
-              {/* Input Field */}
-              <div className="space-y-1">
-                {formData.contactType === 'email' ? (
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                        </svg>
-                      </div>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="you@example.com"
-                        required
-                        className={`w-full pl-12 pr-4 py-4 bg-white/95 backdrop-blur-sm border-2 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 ${
-                          validationErrors.email
-                            ? 'border-red-500 focus:ring-red-500/50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      />
-                    </div>
-                    {validationErrors.email && (
-                      <p className="mt-2 text-sm text-red-300 font-medium">{validationErrors.email}</p>
-                    )}
+              {/* Email Field - Optional */}
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Email Address <span className="text-purple-200 text-xs">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    </svg>
                   </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="+1 (555) 123-4567"
-                        required
-                        className={`w-full pl-12 pr-4 py-4 bg-white/95 backdrop-blur-sm border-2 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 ${
-                          validationErrors.phone
-                            ? 'border-red-500 focus:ring-red-500/50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      />
-                    </div>
-                    {validationErrors.phone && (
-                      <p className="mt-2 text-sm text-red-300 font-medium">{validationErrors.phone}</p>
-                    )}
-                  </div>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="you@example.com"
+                    className={`w-full pl-12 pr-4 py-4 bg-white/95 backdrop-blur-sm border-2 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 ${
+                      validationErrors.email
+                        ? 'border-red-500 focus:ring-red-500/50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  />
+                </div>
+                {validationErrors.email && (
+                  <p className="mt-2 text-sm text-red-300 font-medium">{validationErrors.email}</p>
                 )}
               </div>
 
@@ -281,7 +248,7 @@ const SignIn = () => {
             {/* Register Link */}
             <div className="text-center">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/register')}
                 className="text-white font-medium hover:text-purple-200 transition-colors duration-200 inline-flex items-center gap-2 group"
               >
                 <span>Create an account</span>
